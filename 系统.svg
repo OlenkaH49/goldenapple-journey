@@ -1,0 +1,18 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g opacity="0.4">
+<path d="M16 26.6666V29.3333" stroke="#C0B5A6" stroke-width="2.66667" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M16 2.66663V5.33329" stroke="#C0B5A6" stroke-width="2.66667" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M22.6667 26.6666V29.3333" stroke="#C0B5A6" stroke-width="2.66667" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M22.6667 2.66663V5.33329" stroke="#C0B5A6" stroke-width="2.66667" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M2.66669 16H5.33335" stroke="#C0B5A6" stroke-width="2.66667" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M2.66669 22.6666H5.33335" stroke="#C0B5A6" stroke-width="2.66667" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M2.66669 9.33337H5.33335" stroke="#C0B5A6" stroke-width="2.66667" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M26.6667 16H29.3334" stroke="#C0B5A6" stroke-width="2.66667" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M26.6667 22.6666H29.3334" stroke="#C0B5A6" stroke-width="2.66667" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M26.6667 9.33337H29.3334" stroke="#C0B5A6" stroke-width="2.66667" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M9.33331 26.6666V29.3333" stroke="#C0B5A6" stroke-width="2.66667" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M9.33331 2.66663V5.33329" stroke="#C0B5A6" stroke-width="2.66667" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7.99998 5.33337H24C25.4718 5.33337 26.6666 6.52827 26.6666 8.00004V24C26.6666 25.4718 25.4718 26.6667 24 26.6667H7.99998C6.52821 26.6667 5.33331 25.4718 5.33331 24V8.00004C5.33331 6.52827 6.52821 5.33337 7.99998 5.33337V5.33337" stroke="#C0B5A6" stroke-width="2.66667" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M12 10.6666H20C20.7359 10.6666 21.3334 11.2641 21.3334 12V20C21.3334 20.7358 20.7359 21.3333 20 21.3333H12C11.2641 21.3333 10.6667 20.7358 10.6667 20V12C10.6667 11.2641 11.2641 10.6666 12 10.6666V10.6666" stroke="#C0B5A6" stroke-width="2.66667" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</svg>

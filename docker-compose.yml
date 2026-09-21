@@ -1,0 +1,46 @@
+# docker-compose.yml - PostgreSQL + Redis 开发环境（备用）
+#
+# 当前架构使用 SQLite + 进程内轻量队列，无需启动本文件即可运行（npm start 即可）。
+# 本文件供未来迁移到 PostgreSQL + Redis + Bull 时使用：
+#   启动：docker compose up -d
+#   停止：docker compose down
+#   数据持久化在 ./data/pg 和 ./data/redis 卷
+#
+# 启用后还需：把 db.js 改为 pg 库实现、queue.js 改为 bull 实现，并启用 .env 中的 PG/REDIS 配置。
+
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: goldenapple-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: goldenapple
+      POSTGRES_PASSWORD: goldenapple
+      POSTGRES_DB: golden_apple
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U goldenapple -d golden_apple"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: goldenapple-redis
+    restart: unless-stopped
+    # 如需密码：command: redis-server --requirepass yourpassword
+    command: redis-server
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
