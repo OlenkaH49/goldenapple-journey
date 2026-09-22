@@ -2,7 +2,4 @@
 *.db 
 data/ 
 word_cache.json 
-.env 
-*.db 
-data/ 
-word_cache.json 
+node_modules/
