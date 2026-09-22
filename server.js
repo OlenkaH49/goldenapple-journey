@@ -42,6 +42,27 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname)));
 
+// ==================== 访问密码鉴权 ====================
+// 密码从环境变量 ACCESS_PASSWORD 读取；未配置则不校验（便于开发）
+const ACCESS_PASSWORD = process.env.ACCESS_PASSWORD || '';
+
+if (ACCESS_PASSWORD) {
+    console.log(`🔐 访问密码已读取 (长度 ${ACCESS_PASSWORD.length})`);
+} else {
+    console.warn('⚠️ 未读取到 ACCESS_PASSWORD，/api 接口将不校验密码');
+}
+
+function requireAccessPassword(req, res, next) {
+    const provided = req.headers['x-access-password'] || '';
+    // 调试日志：打印收到的密码与期望密码（上线前请删除或脱敏）
+    console.log(`🔐 [鉴权] ${req.method} ${req.originalUrl} | 收到: "${provided || '(空)'}" | 期望: "${ACCESS_PASSWORD || '(未配置)'}" | 匹配: ${provided === ACCESS_PASSWORD}`);
+    if (!ACCESS_PASSWORD) return next();
+    if (provided === ACCESS_PASSWORD) return next();
+    return res.status(401).json({ error: '访问密码错误或缺失', code: 'UNAUTHORIZED' });
+}
+
+app.use('/api', requireAccessPassword);
+
 // ==================== 工具函数 ====================
 
 /**
@@ -74,6 +95,11 @@ app.get('/health', (req, res) => {
         database: 'SQLite',
         queue: '进程内轻量队列'
     });
+});
+
+// 校验访问密码：正确返回 200，错误由 requireAccessPassword 中间件返回 401（前端弹窗用）
+app.get('/api/verify-password', (req, res) => {
+    res.json({ ok: true });
 });
 
 // ==================== 文章相关接口 ====================

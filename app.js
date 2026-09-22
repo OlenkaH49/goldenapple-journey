@@ -187,28 +187,138 @@ function getUsername() {
     return (userData && userData.userName) ? userData.userName : 'golden-apple-user';
 }
 
+// ==================== 访问密码 ====================
+const ACCESS_PASSWORD_STORAGE_KEY = 'accessPassword';
+
+function getAccessPassword() {
+    try { return localStorage.getItem(ACCESS_PASSWORD_STORAGE_KEY) || ''; } catch (e) { return ''; }
+}
+
+function setAccessPassword(pwd) {
+    try {
+        if (pwd) localStorage.setItem(ACCESS_PASSWORD_STORAGE_KEY, pwd);
+        else localStorage.removeItem(ACCESS_PASSWORD_STORAGE_KEY);
+    } catch (e) {}
+}
+
+let activePasswordPrompt = null;
+
+// 向后端校验密码：正确返回 true，错误返回 false
+async function verifyPasswordOnServer(pwd) {
+    try {
+        const r = await fetch(API_BASE + '/api/verify-password', {
+            headers: { 'x-access-password': pwd, 'x-username': getUsername() }
+        });
+        console.log(`🔐 [前端] 校验密码请求 /api/verify-password → status ${r.status}`);
+        return r.status === 200;
+    } catch (e) {
+        console.error('🔐 [前端] 校验密码请求失败:', (e && e.message) || e);
+        return false;
+    }
+}
+
+// 弹出密码输入框，校验通过后返回密码字符串（错误则留在弹窗提示）
+function promptAccessPassword(errorMsg) {
+    const existing = document.getElementById('accessPasswordOverlay');
+    if (existing) existing.remove();
+
+    return new Promise(function(resolve) {
+        const overlay = document.createElement('div');
+        overlay.id = 'accessPasswordOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(35,45,60,0.5);display:flex;align-items:center;justify-content:center;z-index:10000;';
+        overlay.innerHTML = `
+            <div style="background:#fff;border-radius:1.1rem;padding:1.6rem 1.8rem;width:330px;max-width:92vw;box-shadow:0 12px 40px rgba(0,0,0,0.25);">
+                <div style="font-size:1.1rem;font-weight:700;color:#333;margin-bottom:0.35rem;">🔒 访问密码</div>
+                <div style="font-size:0.85rem;color:#888;margin-bottom:1.1rem;">请输入访问密码以进入「金苹果之旅」</div>
+                <input id="accessPasswordInput" type="password" placeholder="请输入密码" style="width:100%;box-sizing:border-box;padding:0.7rem 0.85rem;border:1px solid #ddd;border-radius:0.65rem;font-size:0.98rem;margin-bottom:0.7rem;outline:none;" />
+                <div id="accessPasswordError" style="color:#E5484D;font-size:0.82rem;min-height:1.05rem;margin-bottom:0.6rem;">${errorMsg || ''}</div>
+                <button id="accessPasswordSubmit" style="width:100%;padding:0.72rem;background:#6B9B37;color:#fff;border:none;border-radius:0.65rem;font-size:0.98rem;font-weight:600;cursor:pointer;">进入</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const input = overlay.querySelector('#accessPasswordInput');
+        const btn = overlay.querySelector('#accessPasswordSubmit');
+        const errEl = overlay.querySelector('#accessPasswordError');
+
+        async function submit() {
+            const v = input.value.trim();
+            if (!v) { errEl.textContent = '请输入密码'; return; }
+            btn.disabled = true;
+            btn.textContent = '验证中...';
+            const ok = await verifyPasswordOnServer(v);
+            if (ok) {
+                overlay.remove();
+                resolve(v);
+            } else {
+                btn.disabled = false;
+                btn.textContent = '进入';
+                errEl.textContent = '密码错误，请重新输入';
+                input.value = '';
+                input.focus();
+            }
+        }
+        btn.addEventListener('click', submit);
+        input.addEventListener('keydown', function(e) { if (e.key === 'Enter') submit(); });
+        setTimeout(function() { input.focus(); }, 0);
+    });
+}
+
+// 确保已取得访问密码；force 时清空旧密码并重弹
+function ensureAccessPassword(opts) {
+    opts = opts || {};
+    const stored = getAccessPassword();
+    if (!opts.force && stored) return Promise.resolve(stored);
+    if (opts.force) setAccessPassword('');
+    if (activePasswordPrompt) return activePasswordPrompt;
+    activePasswordPrompt = promptAccessPassword(opts.errorMsg).then(function(pwd) {
+        setAccessPassword(pwd);
+        activePasswordPrompt = null;
+        return pwd;
+    }).catch(function(e) {
+        activePasswordPrompt = null;
+        throw e;
+    });
+    return activePasswordPrompt;
+}
+
+// 统一请求：加 x-access-password 头，401 时重弹密码框并重试
+async function request(path, opts) {
+    const method = opts.method || 'GET';
+    const headers = Object.assign({ 'x-username': getUsername() }, opts.headers || {});
+    const body = opts.body !== undefined ? JSON.stringify(opts.body) : undefined;
+    if (body !== undefined && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+
+    let token = await ensureAccessPassword();
+    headers['x-access-password'] = token;
+    console.log(`🌐 [前端请求] ${method} ${path} | 携带密码头: ${!!token} | 密码长度: ${token.length}`);
+
+    let r = await fetch(API_BASE + path, { method: method, headers: headers, body: body });
+    console.log(`🌐 [前端响应] ${method} ${path} → status ${r.status}`);
+    while (r.status === 401) {
+        token = await ensureAccessPassword({ force: true, errorMsg: '密码错误，请重新输入' });
+        headers['x-access-password'] = token;
+        console.log(`🌐 [前端重试] ${method} ${path} | 携带密码头: ${!!token} | 密码长度: ${token.length}`);
+        r = await fetch(API_BASE + path, { method: method, headers: headers, body: body });
+        console.log(`🌐 [前端响应] ${method} ${path} → status ${r.status}`);
+    }
+    return r;
+}
+
 async function apiGet(path) {
-    const r = await fetch(API_BASE + path, { headers: { 'x-username': getUsername() } });
+    const r = await request(path, { method: 'GET' });
     if (!r.ok) throw new Error('GET ' + path + ' 失败: ' + r.status);
     return r.json();
 }
 
 async function apiPost(path, body) {
-    const r = await fetch(API_BASE + path, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-username': getUsername() },
-        body: JSON.stringify(body || {})
-    });
+    const r = await request(path, { method: 'POST', body: body || {} });
     if (!r.ok) throw new Error('POST ' + path + ' 失败: ' + r.status);
     return r.json();
 }
 
 async function apiPut(path, body) {
-    const r = await fetch(API_BASE + path, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'x-username': getUsername() },
-        body: JSON.stringify(body || {})
-    });
+    const r = await request(path, { method: 'PUT', body: body || {} });
     if (!r.ok) throw new Error('PUT ' + path + ' 失败: ' + r.status);
     return r.json();
 }
@@ -3244,6 +3354,9 @@ function restoreSortPanel() {
 
 window.addEventListener('DOMContentLoaded', function() {
     console.log('🎯 DOM 加载完成');
+    
+    // 打开网站即校验访问密码（未存则弹窗，已存则静默通过）
+    ensureAccessPassword().catch(function() {});
     
     // 初始化收集区徽章（尚未进入主界面，保持隐藏）
     setTimeout(updateCollectBadge, 100);
